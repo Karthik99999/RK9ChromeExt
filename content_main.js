@@ -66,6 +66,12 @@ export function main() {
     showDownButton.innerText = "Load Showdown List";
     showDownButton.className = "btn btn-sm btn-primary mx-2 rk9-ext-main-button";
 
+    // Create a new button element
+    var deleteAllButton = document.createElement("button");
+    deleteAllButton.innerText = "Delete All Pokémon";
+    deleteAllButton.className = "btn btn-danger mx-2";
+    deleteAllButton.disabled = document.querySelectorAll(".pokemon").length === 0;
+
     // Get a reference to the existing buttons
     var existingAddButton = document.getElementById("add");
     var existingSubmitButton = document.getElementById("submit");
@@ -201,7 +207,19 @@ export function main() {
         existingSubmitButton.parentNode.insertBefore(showDownContainer, existingSubmitButton.nextSibling);
     });
 
-    // Insert the new button after the existing button
+    // Add a click event listener to the button
+    deleteAllButton.addEventListener("click", async function () {
+        if (confirm("Are you sure you want to delete all Pokémon? This action cannot be undone.")) {
+            for (const pokemonElement of document.querySelectorAll(".pokemon")) {
+                await deleteSinglePokemon(pokemonElement);
+            }
+            deleteAllButton.disabled = true;
+            pokemonCount.textContent = "0";
+        }
+    });
+
+    // Insert the new buttons after the existing button
+    existingAddButton.parentNode.insertBefore(deleteAllButton, existingAddButton.nextSibling);
     existingAddButton.parentNode.insertBefore(showDownButton, existingAddButton.nextSibling);
 }
 
@@ -789,6 +807,41 @@ async function addSinglePokemon(pokemon) {
         loadingJingle.pause();
         console.log("Error:", error.message);
         return "";
+    }
+}
+
+async function deleteSinglePokemon(pokemonElement) {
+    // Define the URL and headers
+    const postUrl = "https://rk9.gg/teamlist/delete";
+    const headers = {
+        "Cookie": cookies
+    };
+
+    const formData = new FormData();
+    formData.append("pokemonid", pokemonElement.id);
+
+    // Define the POST request options
+    const requestOptions = {
+        method: 'POST',
+        headers: new Headers(headers),
+        body: formData,
+    };
+
+    // Make the POST request
+    try {
+        const response = await fetch(postUrl, requestOptions);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        pokemonElement.style.transition = "opacity 1s ease";
+        pokemonElement.style.opacity = "0";
+        pokemonElement.addEventListener("transitionend", function () {
+            pokemonElement.remove();
+        }, { once: true });
+    } catch (error) {
+        console.log("Error:", error.message);
     }
 }
 
